@@ -9,6 +9,24 @@ document.addEventListener('DOMContentLoaded', () => {
   const searchInput  = document.getElementById('searchInput');
   const filterSelect = document.getElementById('filterSelect');
 
+  const themeToggle  = document.getElementById('themeToggle');
+  const savedTheme = localStorage.getItem('siteAnalyzerTheme') || 'light';
+  document.body.dataset.theme = savedTheme;
+
+  function updateThemeToggle(theme) {
+    themeToggle.textContent = theme === 'dark' ? '☀️' : '🌙';
+    themeToggle.title = theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme';
+    themeToggle.setAttribute('aria-label', themeToggle.title);
+  }
+
+  updateThemeToggle(savedTheme);
+  themeToggle?.addEventListener('click', () => {
+    const nextTheme = document.body.dataset.theme === 'dark' ? 'light' : 'dark';
+    document.body.dataset.theme = nextTheme;
+    localStorage.setItem('siteAnalyzerTheme', nextTheme);
+    updateThemeToggle(nextTheme);
+  });
+
   let resultsData = [];
   let sortCol = null;
   let sortAsc = true;
@@ -83,17 +101,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const base = { wordCount, internalLinks, navLinks, images };
 
-    if (parkingScore >= 40) return { verdict:'Паркинг / Продаётся', status:'danger', score:parkingScore, cms:'', isEcommerce:false, isBlog:false, ...base };
+    if (parkingScore >= 40) return { verdict:'Parked / For sale', status:'danger', score:parkingScore, cms:'', isEcommerce:false, isBlog:false, ...base };
 
     const sizeKb = new Blob([html]).size / 1024;
     if (sizeKb < 1.5 && totalLinks < 3 && wordCount < 10)
-      return { verdict:'Пустая страница', status:'danger', score:0, cms:'', isEcommerce:false, isBlog:false, ...base };
+      return { verdict:'Empty page', status:'danger', score:0, cms:'', isEcommerce:false, isBlog:false, ...base };
     if (/access denied|403 forbidden|403 error|cloudflare.{0,80}security/i.test(title) ||
         /access denied|403 forbidden|rate limit|captcha required/i.test(bodyText.slice(0,500)))
-      return { verdict:'Блок / 403', status:'error', score:0, cms:'', isEcommerce:false, isBlog:false, wordCount:0, internalLinks:0, navLinks:0, images:0 };
+      return { verdict:'Blocked / 403', status:'error', score:0, cms:'', isEcommerce:false, isBlog:false, wordCount:0, internalLinks:0, navLinks:0, images:0 };
     if (/under construction|coming soon|website under/i.test(title) ||
         (wordCount < 80 && /under construction|coming soon|launching soon|stay tuned/i.test(bodyText)))
-      return { verdict:'В разработке', status:'warning', score:10, cms:'', isEcommerce:false, isBlog:false, ...base };
+      return { verdict:'Under construction', status:'warning', score:10, cms:'', isEcommerce:false, isBlog:false, ...base };
 
     // REAL SCORE
     let realScore = 0;
@@ -146,16 +164,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let verdict, status;
     if (realScore >= 70) {
-      verdict = isEcommerce ? '✓ Интернет-магазин' : isBlog ? '✓ Блог / СМИ' : '✓ Полноценный сайт';
+      verdict = isEcommerce ? '✓ E-commerce store' : isBlog ? '✓ Blog / Media' : '✓ Full website';
       status = 'success';
     } else if (realScore >= 35) {
-      verdict = isEcommerce ? '~ Магазин (лёгкий)' : '~ Лендинг / Визитка';
+      verdict = isEcommerce ? '~ Store (light)' : '~ Landing / Business card';
       status = 'warning';
     } else if (realScore >= 15) {
-      verdict = '~ Минимальный лендинг';
+      verdict = '~ Minimal landing';
       status = 'warning';
     } else {
-      verdict = '✗ Пустая / Нерабочая';
+      verdict = '✗ Empty / Broken';
       status = 'danger';
     }
 
@@ -165,7 +183,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // ─── MAIN CLICK ───────────────────────────────────────────────────────────
   analyzeBtn.addEventListener('click', async () => {
     const rawUrls = input.value.split('\n').map(u => u.trim()).filter(u => u.length > 0);
-    if (rawUrls.length === 0) { alert("Вставьте ссылки для проверки"); return; }
+    if (rawUrls.length === 0) { alert("Paste URLs for scanning"); return; }
 
     tbody.innerHTML = '';
     resultsData = [];
@@ -189,7 +207,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <td style="color:#94a3b8;font-size:10px;text-align:center">—</td>
         <td style="color:#94a3b8;font-size:10px;text-align:center">—</td>
         <td class="url-col" title="${cleanUrl}"><a href="${cleanUrl}" target="_blank">${cleanUrl.replace(/^https?:\/\//,'')}</a></td>
-        <td colspan="10" style="color:#94a3b8;font-style:italic;font-size:11px;">В очереди...</td>
+        <td colspan="10" style="color:#94a3b8;font-style:italic;font-size:11px;">Queued...</td>
       `;
       tbody.appendChild(tr);
       rowsMap.set(cleanUrl, tr);
@@ -199,14 +217,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const processUrl = async (url) => {
       const tr = rowsMap.get(url);
       tr.cells[3].colSpan = 10;
-      tr.cells[3].textContent = 'Анализирую...';
+      tr.cells[3].textContent = 'Analyzing...';
       tr.cells[3].style.color = '#2563eb';
       const result = await analyzeSingleUrl(url);
       updateRow(tr, result);
       resultsData.push(result);
       completedCount++;
       progressBar.style.width = `${(completedCount / rawUrls.length) * 100}%`;
-      analyzeBtn.textContent = `Обработка (${completedCount}/${rawUrls.length})...`;
+      analyzeBtn.textContent = `Processing (${completedCount}/${rawUrls.length})...`;
     };
 
     const queue = [...rowsMap.keys()];
@@ -215,7 +233,7 @@ document.addEventListener('DOMContentLoaded', () => {
       await Promise.all(batch.map(url => processUrl(url)));
     }
 
-    analyzeBtn.textContent = 'Начать проверку';
+    analyzeBtn.textContent = 'Start Scan';
     analyzeBtn.disabled = false;
     exportBtn.style.display = 'inline-block';
     updateStats();
@@ -224,7 +242,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // ─── ANALYZE SINGLE ───────────────────────────────────────────────────────
   async function analyzeSingleUrl(url) {
     const result = {
-      url, status:'error', verdict:'Ошибка', httpCode:'-', redirectUrl:'',
+      url, status:'error', verdict:'Error', httpCode:'-', redirectUrl:'',
       size:'0,0', title:'-', links:0, complexity:0, responseTime:0,
       score:0, cms:'', isEcommerce:false, isBlog:false, wordCount:0, images:0, navLinks:0
     };
@@ -243,17 +261,17 @@ document.addEventListener('DOMContentLoaded', () => {
       result.httpCode = response.status;
       if (response.url && response.url !== url) result.redirectUrl = response.url;
 
-      if (response.status === 404) { result.verdict='✗ 404 Не найдено'; result.status='danger'; return result; }
-      if (response.status === 403 || response.status === 401) { result.verdict=`✗ Доступ закрыт (${response.status})`; result.status='error'; return result; }
-      if (response.status >= 500) { result.verdict=`✗ Ошибка сервера (${response.status})`; result.status='error'; return result; }
+      if (response.status === 404) { result.verdict='✗ 404 Not found'; result.status='danger'; return result; }
+      if (response.status === 403 || response.status === 401) { result.verdict=`✗ Access denied (${response.status})`; result.status='error'; return result; }
+      if (response.status >= 500) { result.verdict=`✗ Server error (${response.status})`; result.status='error'; return result; }
 
       const html   = await response.text();
       const sizeKb = new Blob([html]).size / 1024;
-      result.size  = sizeKb.toLocaleString('ru-RU', { minimumFractionDigits:1, maximumFractionDigits:1 });
+      result.size  = sizeKb.toLocaleString('en-US', { minimumFractionDigits:1, maximumFractionDigits:1 });
 
       const parser = new DOMParser();
       const doc    = parser.parseFromString(html, 'text/html');
-      result.title = doc.title ? doc.title.trim().substring(0,40) + (doc.title.length > 40 ? '…' : '') : 'Нет заголовка';
+      result.title = doc.title ? doc.title.trim().substring(0,40) + (doc.title.length > 40 ? '…' : '') : 'No title';
 
       const domain = new URL(url).hostname.replace('www.','');
       const allAnchor = Array.from(doc.querySelectorAll('a[href]'));
@@ -279,9 +297,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     } catch (err) {
       result.responseTime = TIMEOUT_MS;
-      if (err.name === 'AbortError') result.verdict = '⏱ Таймаут';
-      else if (err.message?.includes('Failed to fetch') || err.message?.includes('net::')) result.verdict = '✗ Недоступен / CORS';
-      else result.verdict = `✗ Ошибка`;
+      if (err.name === 'AbortError') result.verdict = '⏱ Timeout';
+      else if (err.message?.includes('Failed to fetch') || err.message?.includes('net::')) result.verdict = '✗ Unavailable / CORS';
+      else result.verdict = `✗ Error`;
       result.status = 'error';
     }
     return result;
@@ -314,12 +332,12 @@ document.addEventListener('DOMContentLoaded', () => {
     if (data.responseTime > 3000) rtClass = 'rt-slow';
     else if (data.responseTime > 1200) rtClass = 'rt-med';
     const rtHtml = data.responseTime > 0
-      ? `<span class="rt-chip ${rtClass}">${data.responseTime} мс</span>`
+      ? `<span class="rt-chip ${rtClass}">${data.responseTime} ms</span>`
       : '<span class="rt-chip rt-none">—</span>';
 
     // Redirect
     const redirHtml = data.redirectUrl
-      ? `<a class="redir-badge" href="${data.redirectUrl}" target="_blank" title="${data.redirectUrl}">↪ редирект</a>`
+      ? `<a class="redir-badge" href="${data.redirectUrl}" target="_blank" title="${data.redirectUrl}">↪ redirect</a>`
       : '';
 
     // CMS tag
@@ -334,7 +352,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const tags = [];
     if (data.cms) tags.push(`<span class="cms-tag ${cmsCssMap[data.cms]||'cms-other'}">${data.cms}</span>`);
     if (data.isEcommerce && !['Shopify','Magento','PrestaShop','OpenCart'].includes(data.cms)) tags.push(`<span class="cms-tag cms-ecom">eCommerce</span>`);
-    if (data.isBlog && !data.cms) tags.push(`<span class="cms-tag cms-blog">Blog/СМИ</span>`);
+    if (data.isBlog && !data.cms) tags.push(`<span class="cms-tag cms-blog">Blog/Media</span>`);
     if (tags.length) cmsHtml = tags.join(' ');
 
     // Score chip
@@ -368,7 +386,7 @@ document.addEventListener('DOMContentLoaded', () => {
       <td style="text-align:center">${scoreHtml}</td>
     `;
 
-    tr.title = 'Двойной клик — перепроверить';
+    tr.title = 'Double-click to recheck';
     tr.ondblclick = () => recheckRow(tr, data.url);
   }
 
@@ -376,7 +394,7 @@ document.addEventListener('DOMContentLoaded', () => {
   async function recheckRow(tr, url) {
     const cells = tr.querySelectorAll('td');
     if (cells[2]) cells[2].style.opacity = '0.5';
-    if (cells[4]) cells[4].textContent = '⟳ Повтор...';
+    if (cells[4]) cells[4].textContent = '⟳ Rechecking...';
     const result = await analyzeSingleUrl(url);
     const idx = resultsData.findIndex(r => r.url === url);
     if (idx !== -1) resultsData[idx] = result;
@@ -388,10 +406,10 @@ document.addEventListener('DOMContentLoaded', () => {
   function updateStats() {
     const c = resultsData.reduce((acc, r) => { acc[r.status] = (acc[r.status]||0)+1; return acc; }, {});
     statsBar.innerHTML = `
-      <span class="stat-badge suc">✓ Полноценные: ${c.success||0}</span>
-      <span class="stat-badge wrn">~ Лендинги: ${c.warning||0}</span>
-      <span class="stat-badge dng">✗ Паркинг/Пустые: ${c.danger||0}</span>
-      <span class="stat-badge err">⚠ Ошибки: ${c.error||0}</span>
+      <span class="stat-badge suc">✓ Full websites: ${c.success||0}</span>
+      <span class="stat-badge wrn">~ Landing pages: ${c.warning||0}</span>
+      <span class="stat-badge dng">✗ Parked/Empty: ${c.danger||0}</span>
+      <span class="stat-badge err">⚠ Errors: ${c.error||0}</span>
     `;
     statsBar.style.display = 'flex';
   }
@@ -412,7 +430,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // ─── SORT ─────────────────────────────────────────────────────────────────
   document.querySelectorAll('th[data-sort]').forEach(th => {
     th.style.cursor = 'pointer';
-    th.title = 'Клик — сортировать';
+    th.title = 'Click to sort';
     th.addEventListener('click', () => {
       const col = th.dataset.sort;
       if (sortCol === col) sortAsc = !sortAsc; else { sortCol = col; sortAsc = true; }
@@ -457,12 +475,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // ─── EXPORT CSV ───────────────────────────────────────────────────────────
   exportBtn.addEventListener('click', () => {
-    const hdr  = ['URL','Редирект','HTTP','Время (мс)','Размер (КБ)','Заголовок','Ссылки','Сложность','Слова','Изображения','Nav','CMS','eCommerce','Blog','Скор','Вердикт'];
+    const hdr  = ['URL','Redirect','HTTP','Time (ms)','Size (KB)','Title','Links','Complexity','Words','Images','Nav','CMS','eCommerce','Blog','Score','Verdict'];
     const rows = resultsData.map(r => [
       r.url, r.redirectUrl||'', r.httpCode, r.responseTime,
       r.size, `"${(r.title||'').replace(/"/g,'""')}"`,
       r.links, r.complexity, r.wordCount, r.images, r.navLinks,
-      `"${r.cms||''}"`, r.isEcommerce?'Да':'Нет', r.isBlog?'Да':'Нет',
+      `"${r.cms||''}"`, r.isEcommerce?'Yes':'No', r.isBlog?'Yes':'No',
       r.score, `"${r.verdict}"`
     ]);
     const csv  = [hdr,...rows].map(e=>e.join(',')).join('\n');

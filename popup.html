@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <title>Site Analyzer Pro</title>
@@ -23,6 +23,20 @@
       --err: #64748b;
       --mono: 'JetBrains Mono', monospace;
       --head: 'Syne', sans-serif;
+    }
+
+
+
+    body[data-theme="dark"] {
+      --bg: #0b1220;
+      --surface: #111827;
+      --surface2: #1f2937;
+      --border: #334155;
+      --border2: #475569;
+      --text: #e2e8f0;
+      --text-muted: #94a3b8;
+      --text-dim: #cbd5e1;
+      --err: #94a3b8;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -60,6 +74,32 @@
       border-bottom: 1px solid var(--border);
     }
 
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    #themeToggle {
+      width: 30px;
+      height: 30px;
+      padding: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 7px;
+      border: 1px solid var(--border2);
+      background: var(--surface2);
+      color: var(--text);
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    #themeToggle:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
     .logo-mark {
       width: 38px; height: 38px;
       background: linear-gradient(135deg, var(--accent), var(--accent2));
@@ -86,7 +126,6 @@
       border: 1px solid var(--border2);
       padding: 2px 7px;
       border-radius: 20px;
-      margin-left: auto;
     }
 
     /* ─── INPUT AREA ─────────────────────────────────────── */
@@ -483,20 +522,23 @@
     <div>
       <h1>Site Analyzer Pro</h1>
     </div>
-    <span class="version-tag">v2.0</span>
+    <div class="header-right">
+      <button id="themeToggle" type="button" title="Switch theme" aria-label="Switch theme">🌙</button>
+      <span class="version-tag">v2.0</span>
+    </div>
   </div>
 
   <div class="input-section">
     <div class="input-label">
       <div class="dot"></div>
-      Введите URL (по одному на строку)
+      Enter URLs (one per line)
     </div>
     <textarea id="linksInput" placeholder="example.com&#10;https://another-site.ru&#10;yetanothersite.net"></textarea>
   </div>
 
   <div class="controls">
-    <button id="analyzeBtn">▶ Начать проверку</button>
-    <button id="exportBtn">↓ Скачать CSV</button>
+    <button id="analyzeBtn">▶ Start Scan</button>
+    <button id="exportBtn">↓ Download CSV</button>
   </div>
 
   <div class="progress-container" id="progressBox">
@@ -508,14 +550,14 @@
   <div class="filter-bar">
     <div class="search-wrap">
       <span class="search-icon">🔍</span>
-      <input type="text" id="searchInput" placeholder="Поиск по URL или заголовку...">
+      <input type="text" id="searchInput" placeholder="Search by URL or title...">
     </div>
     <select id="filterSelect">
-      <option value="all">Все результаты</option>
-      <option value="success">✓ Полноценные</option>
-      <option value="warning">~ Лендинги</option>
-      <option value="danger">✗ Паркинг / Пустые</option>
-      <option value="error">⚠ Ошибки</option>
+      <option value="all">All results</option>
+      <option value="success">✓ Full websites</option>
+      <option value="warning">~ Landing pages</option>
+      <option value="danger">✗ Parked / Empty</option>
+      <option value="error">⚠ Errors</option>
     </select>
   </div>
 
@@ -524,18 +566,18 @@
       <thead>
         <tr>
           <th style="width:5%" data-sort="httpCode">HTTP</th>
-          <th style="width:7%" data-sort="responseTime">⏱ Время</th>
+          <th style="width:7%" data-sort="responseTime">⏱ Time</th>
           <th style="width:16%" data-sort="url">URL</th>
-          <th style="width:7%" data-sort="size">Размер</th>
-          <th style="width:12%" data-sort="title">Заголовок</th>
-          <th style="width:5%" title="Внутренние ссылки" data-sort="links">🔗 Ссылки</th>
-          <th style="width:5%" title="Скрипты + CSS + Формы" data-sort="complexity">⚙ Компл.</th>
-          <th style="width:5%" title="Количество слов на странице" data-sort="wordCount">📝 Слова</th>
-          <th style="width:5%" title="Изображения" data-sort="images">🖼 Img</th>
-          <th style="width:5%" title="Навигационные ссылки" data-sort="navLinks">🧭 Nav</th>
-          <th style="width:10%">CMS / Тип</th>
-          <th style="width:12%" data-sort="verdict">Вердикт</th>
-          <th style="width:6%" data-sort="score">Скор</th>
+          <th style="width:7%" data-sort="size">Size</th>
+          <th style="width:12%" data-sort="title">Title</th>
+          <th style="width:5%" title="Internal links" data-sort="links">🔗 Links</th>
+          <th style="width:5%" title="Scripts + CSS + Forms" data-sort="complexity">⚙ Comp.</th>
+          <th style="width:5%" title="Word count on page" data-sort="wordCount">📝 Words</th>
+          <th style="width:5%" title="Images" data-sort="images">🖼 Img</th>
+          <th style="width:5%" title="Navigation links" data-sort="navLinks">🧭 Nav</th>
+          <th style="width:10%">CMS / Type</th>
+          <th style="width:12%" data-sort="verdict">Verdict</th>
+          <th style="width:6%" data-sort="score">Score</th>
         </tr>
       </thead>
       <tbody>
@@ -543,7 +585,7 @@
           <td colspan="13">
             <div class="empty-state">
               <div class="icon">📋</div>
-              <p>Вставьте ссылки выше и нажмите «Начать проверку»</p>
+              <p>Paste URLs above and click “Start Scan”</p>
             </div>
           </td>
         </tr>
