@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Site Analyzer",
   "version": "1.0",
-  "description": "Умный анализатор сайтов: определяет живые сайты, паркинг, лендинги и ошибки.",
+  "description": "Smart website analyzer: detects active sites, parked domains, landing pages, and errors.",
   "permissions": ["activeTab"],
   "host_permissions": ["<all_urls>"],
   "background": {
