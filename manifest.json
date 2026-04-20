@@ -1,0 +1,12 @@
+{
+  "manifest_version": 3,
+  "name": "Site Analyzer",
+  "version": "1.0",
+  "description": "Умный анализатор сайтов: определяет живые сайты, паркинг, лендинги и ошибки.",
+  "permissions": ["activeTab"],
+  "host_permissions": ["<all_urls>"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {}
+}
